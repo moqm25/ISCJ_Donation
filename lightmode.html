@@ -33,6 +33,10 @@
 				color: var(--text);
 				background: linear-gradient(180deg, #fdfdfd, #edf2f7 80%);
 			}
+			body.goal-hit {
+				background: radial-gradient(1200px 800px at 70% 10%, #b7f8c0 0%, #d7ffdd 60%);
+				transition: background 1.2s ease-in-out;
+			}
 			.wrap {
 				min-height: 100%;
 				display: grid;
@@ -89,7 +93,10 @@
 			.heading {
 				font-size: clamp(28px, 4vw, 52px);
 				font-weight: 900;
-				margin-bottom: 10px;
+				line-height: 1.05;
+				letter-spacing: 0.2px;
+				margin: 0 0 10px 0;
+				text-wrap: balance;
 			}
 			.sub {
 				color: var(--muted);
@@ -322,11 +329,16 @@
 				return `hsl(${hue},${sat}%,${light}%)`;
 			}
 			function setFill(p) {
+				// p in [0,1]
 				const color = progressColor(p);
 				$("#fill").style.height = (p * 100).toFixed(2) + "%";
-				$("#fill").style.background = `linear-gradient(180deg,${color},${color})`;
-				$("#bulb").style.background = `radial-gradient(circle at 40% 35%,rgba(255,255,255,.25),rgba(255,255,255,.05) 50%),${color}`;
+				$("#fill").style.background = `linear-gradient(180deg, ${color}, ${color})`;
+				$("#bulb").style.background = `radial-gradient(circle at 40% 35%, rgba(255,255,255,.18), rgba(255,255,255,.04) 50%), ${color}`;
+				document.body.style.setProperty("--accent", color);
+				document.getElementById("raised").style.color = color;
+				document.getElementById("remaining").style.color = color;
 			}
+
 			function setNumbers(t) {
 				const p = clamp(t / GOAL, 0, 1);
 				$("#raised").textContent = fmtUSD(t);
@@ -415,7 +427,13 @@
 					console.log("Fetched total:", t, "at", new Date().toLocaleTimeString());
 					setNumbers(t);
 					$("#last").textContent = ts();
-					if (t >= GOAL && lastTotal < GOAL) launchConfetti();
+					if (total >= GOAL && lastTotal < GOAL) {
+						launchConfetti();
+						document.body.classList.add("goal-hit");
+						console.log("🎉 Goal reached! Turning background green!");
+					} else if (total < GOAL && document.body.classList.contains("goal-hit")) {
+						document.body.classList.remove("goal-hit");
+					}
 					lastTotal = t;
 				} catch (e) {
 					console.error(e);

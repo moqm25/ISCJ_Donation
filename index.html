@@ -416,6 +416,8 @@
 				$("#fill").style.background = `linear-gradient(180deg, ${color}, ${color})`;
 				$("#bulb").style.background = `radial-gradient(circle at 40% 35%, rgba(255,255,255,.18), rgba(255,255,255,.04) 50%), ${color}`;
 				document.body.style.setProperty("--accent", color);
+				document.getElementById("raised").style.color = color;
+				document.getElementById("remaining").style.color = color;
 			}
 
 			function setNumbers(total) {
