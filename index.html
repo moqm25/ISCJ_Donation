@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>ISCJ Fundraiser Thermometer</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark light" />
+		<style>
+			:root {
+				--bg: #0b1220;
+				--panel: #0f1a33;
+				--glass: rgba(255, 255, 255, 0.06);
+				--text: #e9efff;
+				--muted: #a9b4d0;
+				--accent: #7aa2ff;
+				--ring: rgba(122, 162, 255, 0.25);
+				--goal: 200000; /* dollars */
+				--thermo-w: 160px;
+				--thermo-h: 720px;
+				--bulb: 180px;
+				--radius: 28px;
+				--shadow: 0 25px 80px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				background: radial-gradient(1200px 800px at 70% 10%, #101b36 0%, #0b1220 60%);
+				color: var(--text);
+				font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+					"Segoe UI Emoji";
+			}
+
+			.wrap {
+				min-height: 100%;
+				display: grid;
+				grid-template-columns: 1fr auto 1fr;
+				gap: clamp(24px, 3vw, 48px);
+				align-items: center;
+				padding: clamp(16px, 3vw, 32px);
+			}
+
+			.left,
+			.right {
+				display: grid;
+				gap: 16px;
+				align-content: center;
+			}
+
+			.panel {
+				background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				box-shadow: var(--shadow);
+				border-radius: 20px;
+				padding: clamp(18px, 2vw, 28px);
+			}
+
+			.kpis {
+				display: grid;
+				gap: 16px;
+			}
+
+			.kpi {
+				display: grid;
+				gap: 8px;
+				padding: 14px 16px;
+				border-radius: 16px;
+				background: var(--glass);
+				border: 1px solid rgba(255, 255, 255, 0.06);
+			}
+			.kpi .label {
+				color: var(--muted);
+				font-weight: 600;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
+				font-size: 12px;
+			}
+			.kpi .value {
+				font-weight: 800;
+				font-size: clamp(28px, 4vw, 44px);
+				line-height: 1.1;
+			}
+			.kpi .note {
+				color: var(--muted);
+				font-size: 13px;
+			}
+
+			.heading {
+				font-size: clamp(28px, 4vw, 52px);
+				font-weight: 900;
+				line-height: 1.05;
+				letter-spacing: 0.2px;
+				margin: 0 0 10px 0;
+				text-wrap: balance;
+			}
+
+			.sub {
+				color: var(--muted);
+				font-size: clamp(14px, 1.8vw, 18px);
+				margin-bottom: 8px;
+			}
+
+			.thermo-wrap {
+				position: relative;
+				width: max(var(--thermo-w), 26vw);
+				height: max(var(--thermo-h), 55vh);
+				display: grid;
+				place-items: end center;
+				margin: 0 auto;
+				perspective: 900px;
+			}
+
+			/* Thermometer body */
+			.stem {
+				position: relative;
+				width: calc(var(--thermo-w) * 0.36);
+				height: calc(var(--thermo-h) - var(--bulb) * 0.58);
+				background: linear-gradient(180deg, #0c1429, #0a1121);
+				border-radius: var(--radius);
+				border: 2px solid rgba(255, 255, 255, 0.12);
+				box-shadow: var(--shadow);
+				overflow: hidden;
+			}
+
+			.stem::after {
+				/* glossy edge */
+				content: "";
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 40%, transparent 60%, rgba(255, 255, 255, 0.04));
+				pointer-events: none;
+			}
+
+			.fill {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				width: 100%;
+				height: 0%;
+				background: linear-gradient(180deg, #ff5252, #c62828);
+				transition: height 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), background 600ms linear, filter 600ms linear;
+				filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.25));
+			}
+
+			.tick {
+				position: absolute;
+				left: 8px;
+				width: calc(100% - 16px);
+				border-top: 2px dashed rgba(255, 255, 255, 0.12);
+				pointer-events: none;
+			}
+
+			.tick-label {
+				position: absolute;
+				right: calc(100% + 10px);
+				transform: translateY(50%);
+				font-size: 12px;
+				color: var(--muted);
+				white-space: nowrap;
+			}
+
+			.bulb {
+				position: absolute;
+				bottom: 0;
+				width: var(--bulb);
+				height: var(--bulb);
+				border-radius: 50%;
+				background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.03) 38%),
+					linear-gradient(180deg, #0e1832, #0a1121);
+				border: 2px solid rgba(255, 255, 255, 0.12);
+				box-shadow: var(--shadow);
+				display: grid;
+				place-items: center;
+				transform: translateZ(0);
+			}
+
+			.bulb-fill {
+				width: calc(var(--bulb) * 0.66);
+				height: calc(var(--bulb) * 0.66);
+				border-radius: 50%;
+				background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04) 50%), #ff5252;
+				box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.4);
+				transition: background 600ms linear;
+			}
+
+			.legend {
+				display: grid;
+				gap: 8px;
+				margin-top: 8px;
+				color: var(--muted);
+				font-size: 12px;
+				text-align: center;
+			}
+
+			.footer {
+				margin-top: 10px;
+				color: var(--muted);
+				font-size: 12px;
+				text-align: center;
+			}
+
+			.statbar {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 10px;
+				margin-top: 12px;
+			}
+			.pill {
+				background: var(--glass);
+				border: 1px solid rgba(255, 255, 255, 0.06);
+				border-radius: 999px;
+				padding: 10px 14px;
+				display: grid;
+				gap: 4px;
+				justify-items: center;
+			}
+			.pill b {
+				font-size: clamp(16px, 2.6vw, 22px);
+			}
+			.pill span {
+				color: var(--muted);
+				font-size: 12px;
+			}
+
+			.cta {
+				margin-top: 8px;
+				display: flex;
+				gap: 8px;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+			.btn {
+				background: linear-gradient(180deg, #4c7dff, #345ff0);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				color: white;
+				padding: 10px 16px;
+				border-radius: 12px;
+				font-weight: 700;
+				letter-spacing: 0.2px;
+				text-decoration: none;
+				box-shadow: 0 10px 30px rgba(76, 125, 255, 0.35);
+			}
+			.btn:active {
+				transform: translateY(1px);
+			}
+
+			/* Responsive tweaks */
+			@media (max-width: 1100px) {
+				.wrap {
+					grid-template-columns: 1fr;
+				}
+				.left,
+				.right {
+					order: 2;
+				}
+				.thermo-wrap {
+					order: 1;
+				}
+				:root {
+					--thermo-w: 130px;
+					--bulb: 150px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<div class="left">
+				<div class="panel">
+					<h1 class="heading">ISCJ Fundraiser Progress</h1>
+					<div class="sub">Every gift moves the needle — thank you for your generosity!</div>
+					<div class="kpis">
+						<div class="kpi">
+							<div class="label">Raised</div>
+							<div class="value" id="raised">$0</div>
+							<div class="note">Auto-updates from submissions</div>
+						</div>
+						<div class="kpi">
+							<div class="label">Goal</div>
+							<div class="value" id="goal">$200,000</div>
+							<div class="note">We’ve got this 💪</div>
+						</div>
+						<div class="kpi">
+							<div class="label">Remaining</div>
+							<div class="value" id="remaining">$200,000</div>
+							<div class="note">Until we hit the goal</div>
+						</div>
+					</div>
+					<div class="statbar">
+						<div class="pill">
+							<b id="pct">0%</b>
+							<span>to goal</span>
+						</div>
+						<div class="pill">
+							<b id="last">—</b>
+							<span>last updated</span>
+						</div>
+						<div class="pill">
+							<b id="next">10s</b>
+							<span>auto-refresh</span>
+						</div>
+					</div>
+					<div class="cta">
+						<!-- Optional buttons; you can change hrefs or remove -->
+						<a class="btn" href="#" onclick="toggleFullscreen();return false;">Fullscreen</a>
+						<a class="btn" href="#" onclick="forceRefresh();return false;">Refresh now</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Thermometer column -->
+			<div class="thermo-wrap">
+				<div class="stem" id="stem">
+					<div class="fill" id="fill"></div>
+					<!-- Ticks at 0/25/50/75/100% -->
+					<div class="tick" style="bottom: 0%"></div>
+					<div class="tick-label" style="bottom: 0%">0%</div>
+					<div class="tick" style="bottom: 25%"></div>
+					<div class="tick-label" style="bottom: 25%">25%</div>
+					<div class="tick" style="bottom: 50%"></div>
+					<div class="tick-label" style="bottom: 50%">50%</div>
+					<div class="tick" style="bottom: 75%"></div>
+					<div class="tick-label" style="bottom: 75%">75%</div>
+					<div class="tick" style="bottom: 100%"></div>
+					<div class="tick-label" style="bottom: 100%">100%</div>
+				</div>
+				<div class="bulb">
+					<div class="bulb-fill" id="bulb"></div>
+				</div>
+				<!-- <div class="legend">
+					<div>Thermometer updates every minute</div>
+					<div>Color shifts from red → yellow → green as we approach the goal</div>
+				</div> -->
+				<!-- <br /><br /> -->
+				<!-- <div class="footer" id="status"></div> -->
+				<canvas id="confetti" style="position: fixed; inset: 0; pointer-events: none; z-index: 9999"></canvas>
+			</div>
+
+			<div class="right">
+				<div class="panel">
+					<div class="kpi">
+						<!-- <div class="label">ISCJ 50th Year Anniversary</div> -->
+						<div style="display: flex; justify-content: center; align-items: center; margin: 10px 0">
+							<img
+								src="./pic.jpg"
+								alt="Community"
+								style="max-width: 100%; border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18)" />
+						</div>
+						<!-- <div class="note">Together, we make a difference!</div> -->
+						<!-- <div class="label">Projection Tips</div>
+						<div class="value" style="font-size: 20px; font-weight: 700">Max Visibility</div>
+						<ul style="margin: 6px 0 0 1.1em; color: var(--muted); line-height: 1.6">
+							<li>Use Fullscreen (button above) for the projector.</li>
+							<li>Keep this page open; it refreshes automatically.</li>
+							<li>Ensure Wi-Fi is stable for live totals.</li>
+						</ul> -->
+					</div>
+					<!-- <div class="kpi">
+						<div class="label">Notes</div>
+						<div class="note">
+							Replace the <b>SHEET_URL</b> in the code with your Google Sheets “Published CSV” for the Totals tab. That CSV should
+							contain a single number: the sum of donations.
+						</div>
+					</div> -->
+				</div>
+			</div>
+		</div>
+
+		<script>
+			/**********************
+			 * CONFIG
+			 **********************/
+			const GOAL = 200000; // $200,000 goal
+			const REFRESH_MS = 10_000; // auto-refresh interval
+			const SHEET_URL =
+				// "https://docs.google.com/spreadsheets/d/e/2PACX-1vRQZ-p8yh1UgbXzfor4IbVI9flzWGJT2cCmeY6KPUEsGTRMEIjEgGqekErCyKDgo9voyTBhH2JSr1Fc/pub?gid=535518416&single=true&output=csv";
+				// "https://docs.google.com/spreadsheets/d/2PACX-1vRQZ-p8yh1UgbXzfor4IbVI9flzWGJT2cCmeY6KPUEsGTRMEIjEgGqekErCyKDgo9voyTBhH2JSr1Fc/export?format=csv&gid=535518416&range=A1";
+				"https://docs.google.com/spreadsheets/d/1nBz3ZcfR9EeA2oRAd-hz7wFHPumSGXY4FvcXHXB0Upo/export?format=csv&gid=535518416&range=A1";
+			// Example: 'https://docs.google.com/spreadsheets/d/XXXX/pub?gid=YYYY&single=true&output=csv'
+			// The CSV should contain one cell with the total amount raised.
+
+			/**********************
+			 * STATE
+			 **********************/
+			let lastTotal = 0;
+			let confettiFired = false;
+			const $ = (sel) => document.querySelector(sel);
+
+			/**********************
+			 * HELPERS
+			 **********************/
+			function fmtUSD(n) {
+				return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+			}
+			function clamp(n, lo, hi) {
+				return Math.max(lo, Math.min(hi, n));
+			}
+
+			// progress color: 0% -> red (0deg), 50% -> orange/yellow (45-60deg), 100% -> green (120deg)
+			function progressColor(p) {
+				// p in [0,1]
+				const hue = 0 + 120 * p; // 0..120
+				const sat = 90;
+				const light = clamp(38 + 8 * p, 38, 46); // slightly lighter near top
+				return `hsl(${hue}, ${sat}%, ${light}%)`;
+			}
+
+			function setFill(p) {
+				// p in [0,1]
+				const color = progressColor(p);
+				$("#fill").style.height = (p * 100).toFixed(2) + "%";
+				$("#fill").style.background = `linear-gradient(180deg, ${color}, ${color})`;
+				$("#bulb").style.background = `radial-gradient(circle at 40% 35%, rgba(255,255,255,.18), rgba(255,255,255,.04) 50%), ${color}`;
+				document.body.style.setProperty("--accent", color);
+			}
+
+			function setNumbers(total) {
+				const pct = clamp(total / GOAL, 0, 1);
+				$("#raised").textContent = fmtUSD(total);
+				$("#goal").textContent = fmtUSD(GOAL);
+				$("#remaining").textContent = fmtUSD(Math.max(0, GOAL - total));
+				$("#pct").textContent = Math.round(pct * 100) + "%";
+				setFill(pct);
+			}
+
+			function setStatus(msg) {
+				$("#status").textContent = msg;
+			}
+
+			function ts() {
+				const d = new Date();
+				return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+				// + " · " +
+				// d.toLocaleDateString([], { month: "short", day: "numeric" })
+			}
+
+			function toggleFullscreen() {
+				const el = document.documentElement;
+				if (!document.fullscreenElement) el.requestFullscreen?.();
+				else document.exitFullscreen?.();
+			}
+
+			function forceRefresh() {
+				loadTotal(true);
+			}
+
+			/**********************
+			 * CONFETTI (tiny vanilla)
+			 **********************/
+			const confettiCanvas = $("#confetti");
+			const ctx = confettiCanvas.getContext("2d");
+			let confettiPieces = [];
+			function resizeCanvas() {
+				confettiCanvas.width = window.innerWidth;
+				confettiCanvas.height = window.innerHeight;
+			}
+			window.addEventListener("resize", resizeCanvas);
+			resizeCanvas();
+
+			function launchConfetti(durationMs = 5000) {
+				if (confettiFired) return;
+				confettiFired = true;
+
+				const colors = ["#ffffff", "#ffd166", "#ef476f", "#06d6a0", "#7aa2ff"];
+				const count = Math.min(240, Math.floor(window.innerWidth / 7));
+				confettiPieces = Array.from({ length: count }, () => ({
+					x: Math.random() * confettiCanvas.width,
+					y: -20,
+					w: 6 + Math.random() * 6,
+					h: 10 + Math.random() * 10,
+					speed: 2 + Math.random() * 3,
+					tilt: Math.random() * 10,
+					tiltSpeed: Math.random() * 0.06 + 0.03,
+					color: colors[(Math.random() * colors.length) | 0],
+					rotation: Math.random() * Math.PI,
+				}));
+
+				const start = performance.now();
+				(function frame(now) {
+					const t = now - start;
+					ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+					confettiPieces.forEach((p) => {
+						p.y += p.speed;
+						p.tilt += p.tiltSpeed;
+						p.x += Math.sin(p.tilt) * 1.5;
+						p.rotation += 0.03;
+						ctx.save();
+						ctx.translate(p.x, p.y);
+						ctx.rotate(p.rotation);
+						ctx.fillStyle = p.color;
+						ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+						ctx.restore();
+					});
+					confettiPieces = confettiPieces.filter((p) => p.y < confettiCanvas.height + 40);
+					if (t < durationMs || confettiPieces.length) requestAnimationFrame(frame);
+					else
+						setTimeout(() => {
+							confettiFired = false;
+						}, 2000);
+				})(start);
+			}
+
+			/**********************
+			 * DATA LOAD
+			 **********************/
+			async function fetchCSVNumber(url) {
+				const res = await fetch(url + (url.includes("?") ? "&" : "?") + "cacheBust=" + Date.now(), {
+					cache: "no-store",
+				});
+				const txt = await res.text();
+				// Expect a single numeric cell; strip commas/whitespace
+				const cleaned = txt.replace(/[\r\n,]/g, "").trim();
+				const num = parseFloat(cleaned);
+				if (Number.isNaN(num)) throw new Error('CSV did not contain a valid number: "' + txt.slice(0, 120) + '..."');
+				return Math.max(0, Math.floor(num)); // dollars, no cents
+			}
+
+			let countdownTimer = null;
+			function startCountdown() {
+				clearInterval(countdownTimer);
+				let left = REFRESH_MS / 1000;
+				$("#next").textContent = left + "s";
+				countdownTimer = setInterval(() => {
+					left -= 1;
+					if (left < 0) left = 0;
+					$("#next").textContent = left + "s";
+				}, 1000);
+			}
+
+			async function loadTotal(instant = false) {
+				try {
+					const total = await fetchCSVNumber(SHEET_URL);
+					console.log("Fetched total:", total, "at", new Date().toLocaleTimeString());
+					setNumbers(total);
+					$("#last").textContent = ts();
+					// setStatus("Live total loaded successfully.");
+					if (total >= GOAL && lastTotal < GOAL) {
+						launchConfetti();
+						// setStatus("🎉 Goal reached! Thank you!");
+					}
+					lastTotal = total;
+				} catch (err) {
+					console.error(err);
+					// setStatus("Could not fetch live total. Retrying…");
+				} finally {
+					if (!instant) startCountdown();
+				}
+			}
+
+			/**********************
+			 * INIT
+			 **********************/
+			(function init() {
+				// Initial numbers
+				setNumbers(0);
+				$("#goal").textContent = fmtUSD(GOAL);
+				$("#last").textContent = "—";
+				// setStatus("Connecting to live total…");
+
+				// Kick off load + schedule
+				loadTotal(true);
+				setInterval(loadTotal, REFRESH_MS);
+
+				// Expose helpers (optional)
+				window.toggleFullscreen = toggleFullscreen;
+				window.forceRefresh = forceRefresh;
+			})();
+		</script>
+	</body>
+</html>
