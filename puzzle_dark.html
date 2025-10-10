@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>ISCJ Fundraiser Puzzle</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark light" />
+		<style>
+			:root {
+				--bg: #0b1220;
+				--panel: #0f1a33;
+				--glass: rgba(255, 255, 255, 0.06);
+				--text: #e9efff;
+				--muted: #a9b4d0;
+				--accent: #7aa2ff;
+				--ring: rgba(122, 162, 255, 0.25);
+				--shadow: 0 25px 80px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+				--radius: 20px;
+				--puzzle-w: min(92vw, 980px);
+				--puzzle-aspect: 1/1; /* Adjust if your pic.jpg isn’t 16:9 */
+				--piece-gap: 6px; /* gap between pieces */
+			}
+			* {
+				box-sizing: border-box;
+			}
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				background: radial-gradient(1200px 800px at 70% 10%, #101b36 0%, #0b1220 60%);
+				color: var(--text);
+				font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+			}
+			.wrap {
+				min-height: 100%;
+				display: grid;
+				grid-template-columns: 1fr auto 1fr;
+				gap: clamp(24px, 3vw, 48px);
+				align-items: center;
+				padding: clamp(16px, 3vw, 32px);
+			}
+			.left {
+				display: grid;
+				gap: 16px;
+				align-content: center;
+			}
+			.panel {
+				background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				box-shadow: var(--shadow);
+				border-radius: var(--radius);
+				padding: clamp(18px, 2vw, 28px);
+			}
+			.kpis {
+				display: grid;
+				gap: 16px;
+			}
+			.kpi {
+				display: grid;
+				gap: 8px;
+				padding: 14px 16px;
+				border-radius: 16px;
+				background: var(--glass);
+				border: 1px solid rgba(255, 255, 255, 0.06);
+			}
+			.kpi .label {
+				color: var(--muted);
+				font-weight: 600;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
+				font-size: 12px;
+			}
+			.kpi .value {
+				font-weight: 800;
+				font-size: clamp(28px, 4vw, 44px);
+				line-height: 1.1;
+			}
+			.kpi .note {
+				color: var(--muted);
+				font-size: 13px;
+			}
+			.heading {
+				font-size: clamp(28px, 4vw, 52px);
+				font-weight: 900;
+				line-height: 1.05;
+				letter-spacing: 0.2px;
+				margin: 0 0 10px 0;
+				text-wrap: balance;
+			}
+			.sub {
+				color: var(--muted);
+				font-size: clamp(14px, 1.8vw, 18px);
+				margin-bottom: 8px;
+			}
+			.statbar {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 10px;
+				margin-top: 12px;
+			}
+			.pill {
+				background: var(--glass);
+				border: 1px solid rgba(255, 255, 255, 0.06);
+				border-radius: 999px;
+				padding: 10px 14px;
+				display: grid;
+				gap: 4px;
+				justify-items: center;
+			}
+			.pill b {
+				font-size: clamp(16px, 2.6vw, 22px);
+			}
+			.pill span {
+				color: var(--muted);
+				font-size: 12px;
+			}
+			.cta {
+				margin-top: 8px;
+				display: flex;
+				gap: 8px;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+			.btn {
+				background: linear-gradient(180deg, #4c7dff, #345ff0);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				color: white;
+				padding: 10px 16px;
+				border-radius: 12px;
+				font-weight: 700;
+				letter-spacing: 0.2px;
+				text-decoration: none;
+				box-shadow: 0 10px 30px rgba(76, 125, 255, 0.35);
+			}
+			.btn:active {
+				transform: translateY(1px);
+			}
+
+			/* PUZZLE AREA */
+			.puzzle-wrap {
+				position: relative;
+				width: var(--puzzle-w);
+				aspect-ratio: var(--puzzle-aspect);
+				height: auto; /* derived from aspect-ratio */
+				margin: 0 auto;
+				display: grid;
+				place-items: center;
+				isolation: isolate;
+				overflow: hidden; /* keep pieces inside */
+			}
+			/* Green victory wash */
+			.victory {
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				opacity: 0;
+				background: radial-gradient(120% 120% at 50% 50%, rgba(0, 255, 127, 0.16), transparent 60%);
+				transition: opacity 600ms ease;
+				z-index: 1;
+			}
+			.victory--on {
+				opacity: 1;
+			}
+
+			/* Puzzle grid mask frame (thin border + subtle glow) */
+			.puzzle-frame {
+				position: absolute;
+				inset: 0;
+				border-radius: 16px;
+				box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1), 0 35px 90px rgba(0, 0, 0, 0.45);
+				z-index: 2;
+				pointer-events: none;
+			}
+
+			.puzzle {
+				position: absolute;
+				inset: 0; /* fill the wrap */
+				width: 100%;
+				height: 100%;
+				z-index: 3;
+			}
+			.piece {
+				position: relative;
+				width: 100%;
+				height: 100%;
+				border-radius: 8px;
+				overflow: hidden;
+				filter: saturate(0.85) brightness(0.95);
+				transform: translateZ(0);
+				opacity: 0; /* hidden until revealed */
+			}
+			/* Show piece instantly (no animation) */
+			.piece--shown {
+				opacity: 1;
+				transition: opacity 180ms ease;
+			}
+			/* Animate new pieces flying in */
+			@keyframes fly-in {
+				0% {
+					transform: translate(var(--fx, 0), var(--fy, 40vh)) rotate(var(--fr, 0deg)) scale(0.88);
+					opacity: 0;
+				}
+				60% {
+					opacity: 1;
+				}
+				100% {
+					transform: translate(0, 0) rotate(0) scale(1);
+					opacity: 1;
+				}
+			}
+			.piece--reveal {
+				animation: fly-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+				animation-delay: var(--delay, 0ms);
+				box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+			}
+
+			/* Image-based puzzle pieces (PNG assets) */
+			.piece-img {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: auto; /* ok */
+				/* remove: height: auto; */
+				opacity: 0;
+				pointer-events: none;
+			}
+			.piece-img.piece--shown {
+				opacity: 1;
+				transition: opacity 180ms ease;
+			}
+			.piece-img.piece--reveal {
+				animation: fly-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+				animation-delay: var(--delay, 0ms);
+				box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+			}
+
+			/* SVG-based puzzle pieces (stacked full-size, centered) */
+			.piece-svg {
+				position: absolute;
+				/* left: 50%;
+				top: 50%; */
+				transform: translate(-50%, -50%);
+				width: 100%;
+				height: 100%;
+				opacity: 0; /* hidden until revealed */
+				pointer-events: none; /* display-only */
+			}
+			.piece-svg.piece--shown {
+				opacity: 1;
+				transition: opacity 180ms ease;
+			}
+			.piece-svg.piece--reveal {
+				animation: fly-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+				animation-delay: var(--delay, 0ms);
+				box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+			}
+
+			/* Prevent native image drag / text selection while editing */
+			.puzzle,
+			.piece-img {
+				-webkit-user-drag: none;
+				user-select: none;
+			}
+
+			/* optional: faint grid backdrop while incomplete */
+			.puzzle-back {
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 /
+						calc((100% - (var(--cols)-1) * var(--piece-gap)) / var(--cols) + var(--piece-gap)) 100%,
+					linear-gradient(0deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 100%
+						calc((100% - (var(--rows)-1) * var(--piece-gap)) / var(--rows) + var(--piece-gap));
+				border-radius: 16px;
+				z-index: 0;
+			}
+
+			/* Placeholder full image, very faint */
+			.puzzle-placeholder {
+				position: absolute;
+				inset: 0;
+				background-image: url("./pic.jpg");
+				background-size: cover;
+				background-position: center;
+				filter: saturate(0.8) brightness(0.7);
+				opacity: 0.1; /* faint */
+				border-radius: 16px;
+				z-index: 1; /* under tiles, over grid-back */
+				transition: opacity 300ms ease;
+				pointer-events: none;
+			}
+			.puzzle-placeholder.is-off {
+				opacity: 0;
+			}
+
+			/* Responsive: stack columns */
+			@media (max-width: 1100px) {
+				.wrap {
+					grid-template-columns: 1fr;
+				}
+				.left {
+					order: 2;
+				}
+				.puzzle-wrap {
+					order: 1;
+					width: min(96vw, 980px);
+					aspect-ratio: var(--puzzle-aspect);
+					height: auto;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<!-- LEFT KPIs (unchanged) -->
+			<div class="left">
+				<div class="panel">
+					<h1 class="heading">ISCJ Fundraiser Progress</h1>
+					<div class="sub">Every gift moves the needle — thank you for your generosity!</div>
+					<div class="kpis">
+						<div class="kpi">
+							<div class="label">Raised</div>
+							<div class="value" id="raised">$0</div>
+							<div class="note">Auto-updates from submissions</div>
+						</div>
+						<div class="kpi">
+							<div class="label">Goal</div>
+							<div class="value" id="goal">$200,000</div>
+							<div class="note">We’ve got this 💪</div>
+						</div>
+						<div class="kpi">
+							<div class="label">Remaining</div>
+							<div class="value" id="remaining">$200,000</div>
+							<div class="note">Until we hit the goal</div>
+						</div>
+					</div>
+					<div class="statbar">
+						<div class="pill"><b id="pct">0%</b><span>to goal</span></div>
+						<div class="pill"><b id="last">—</b><span>last updated</span></div>
+						<div class="pill"><b id="next">10s</b><span>auto-refresh</span></div>
+					</div>
+					<div class="cta">
+						<a class="btn" href="#" onclick="toggleFullscreen();return false;">Fullscreen</a>
+						<a class="btn" href="#" onclick="forceRefresh();return false;">Refresh now</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- CENTER: PUZZLE -->
+			<div class="puzzle-wrap">
+				<div class="victory" id="victory"></div>
+				<div class="puzzle-back"></div>
+
+				<!-- NEW: faint full-image placeholder (shown when 0 pieces are revealed) -->
+				<div class="puzzle-placeholder"></div>
+
+				<div class="puzzle" id="puzzle" style="--rows: 4; --cols: 5"></div>
+				<div class="puzzle-frame"></div>
+				<canvas id="confetti" style="position: fixed; inset: 0; pointer-events: none; z-index: 9999"></canvas>
+			</div>
+
+			<!-- Right column removed -->
+			<div></div>
+		</div>
+
+		<script>
+			/**********************
+			 * CONFIG
+			 **********************/
+			const GOAL = 200000; // $ goal
+			const REFRESH_MS = 10_000; // auto-refresh interval
+			const ROWS = 5;
+			const COLS = 5;
+			const N = ROWS * COLS; // 25
+			// (Leave GOAL/REFRESH_MS/etc. unchanged.)
+			const OVERLAP_X = 0.12; // 12% of tile width on left/right
+			const OVERLAP_Y = 0.12; // 12% of tile height on top/bottom
+			// Force simple row-major placeholder positions/sizes (1–5 top row, 6–10 next, etc.)
+			const PLACEHOLDER_GRID = true; // set false to use PIECE_MAP positions
+			// Fixed, predictable reveal order: 0..N-1 left-to-right, top-to-bottom
+			// Create randomized reveal order (Fisher–Yates shuffle)
+			const REVEAL_ORDER = Array.from({ length: N }, (_, i) => i).sort(() => Math.random() - 0.5);
+			// Optional reference board size (from source site). For now we keep widths/heights in px absolute.
+			const REF_W = 572,
+				REF_H = 572; // used only if we later scale px -> %
+			const PIECE_STEP = 1 / N; // each piece ~4% of goal
+			let PIECE_MAP = null; // use default grid map unless PLACEHOLDER_GRID is false and a map is provided
+			const LAYOUT_MODE = /[?&]layout=1/.test(location.search); // drag/resize editor on ?layout=1
+			const SHEET_URL =
+				"https://docs.google.com/spreadsheets/d/1nBz3ZcfR9EeA2oRAd-hz7wFHPumSGXY4FvcXHXB0Upo/export?format=csv&gid=535518416&range=A1";
+
+			/**********************
+			 * STATE
+			 **********************/
+			let lastTotal = 0;
+			let confettiFired = false;
+			let shownCount = 0; // how many are currently visible
+			const $ = (sel) => document.querySelector(sel);
+
+			/**********************
+			 * HELPERS
+			 **********************/
+			function fmtUSD(n) {
+				return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+			}
+			function clamp(n, lo, hi) {
+				return Math.max(lo, Math.min(hi, n));
+			}
+			function ts() {
+				return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+			}
+			function toggleFullscreen() {
+				const el = document.documentElement;
+				if (!document.fullscreenElement) el.requestFullscreen?.();
+				else document.exitFullscreen?.();
+			}
+			function forceRefresh() {
+				loadTotal(true);
+			}
+
+			/*
+			// Deterministic shuffle using LCG so order is “predefined”
+			function seededOrder(n, seed = 1337) {
+				const arr = [...Array(n).keys()];
+				let s = seed >>> 0;
+				for (let i = n - 1; i > 0; i--) {
+					s = (1664525 * s + 1013904223) >>> 0;
+					const j = s % (i + 1);
+					[arr[i], arr[j]] = [arr[j], arr[i]];
+				}
+				return arr;
+			}
+			*/
+
+			// Default grid map (centers in each cell); width in % of board width
+			function defaultPieceMap() {
+				const tileW = 100 / COLS;
+				const tileH = 100 / ROWS; // not used for height (aspect preserved), just for centers
+				const map = {};
+				for (let r = 0; r < ROWS; r++) {
+					for (let c = 0; c < COLS; c++) {
+						const idx = r * COLS + c + 1; // 1..N
+						map[idx] = { x: (c + 0.5) * tileW, y: (r + 0.5) * tileH, w: tileW, h: tileW };
+					}
+				}
+				return map;
+			}
+
+			function buildPuzzle() {
+				const wrap = document.querySelector(".puzzle-wrap");
+				const board = document.getElementById("puzzle");
+				wrap.style.setProperty("--rows", ROWS);
+				wrap.style.setProperty("--cols", COLS);
+				board.innerHTML = "";
+
+				for (let i = 1; i <= N; i++) {
+					const img = document.createElement("img");
+					img.className = "piece-svg";
+					img.src = `./puzzle_pieces/${i}.svg`;
+					img.alt = `Puzzle piece ${i}`;
+					img.dataset.index = i - 1;
+					// Centered & full-size; CSS handles positioning/opacity/animation
+					board.appendChild(img);
+				}
+			}
+
+			// Group pieces into 5 rows/cols based on their current center positions (x,y are %)
+			function groupIndicesByRowCol() {
+				const rows = Array.from({ length: ROWS }, () => []);
+				const cols = Array.from({ length: COLS }, () => []);
+				for (let i = 1; i <= N; i++) {
+					const m = PIECE_MAP[i];
+					const r = Math.min(ROWS - 1, Math.max(0, Math.floor(m.y / (100 / ROWS))));
+					const c = Math.min(COLS - 1, Math.max(0, Math.floor(m.x / (100 / COLS))));
+					rows[r].push(i);
+					cols[c].push(i);
+				}
+				return { rows, cols };
+			}
+
+			function autoAdjustRowColSizes({ tight = false } = {}) {
+				const { rows, cols } = groupIndicesByRowCol();
+				// Equalize HEIGHTS per row (use median to avoid outliers)
+				for (let r = 0; r < ROWS; r++) {
+					const ids = rows[r];
+					if (!ids.length) continue;
+					const hs = ids.map((i) => PIECE_MAP[i].h || 0).sort((a, b) => a - b);
+					const targetH = hs[Math.floor(hs.length / 2)] || hs[0] || 0;
+					ids.forEach((i) => {
+						PIECE_MAP[i].h = tight ? targetH : Math.round(PIECE_MAP[i].h * 0.4 + targetH * 0.6);
+					});
+				}
+				// Equalize WIDTHS per col
+				for (let c = 0; c < COLS; c++) {
+					const ids = cols[c];
+					if (!ids.length) continue;
+					const ws = ids.map((i) => PIECE_MAP[i].w || 0).sort((a, b) => a - b);
+					const targetW = ws[Math.floor(ws.length / 2)] || ws[0] || 0;
+					ids.forEach((i) => {
+						PIECE_MAP[i].w = tight ? targetW : Math.round(PIECE_MAP[i].w * 0.4 + targetW * 0.6);
+					});
+				}
+			}
+
+			function applyMapToDOM() {
+				const board = document.getElementById("puzzle");
+				for (let i = 1; i <= N; i++) {
+					const img = board.querySelector(`.piece-img[data-index="${i - 1}"]`);
+					if (!img) continue;
+					const m = PIECE_MAP[i];
+					img.style.left = m.x + "%";
+					img.style.top = m.y + "%";
+					img.style.width = (m.w || 0) + "px";
+					img.style.height = (m.h || m.w || 0) + "px";
+				}
+			}
+
+			// Show pieces up to target count with animation for newly revealed (image-based)
+			function revealPieces(targetCount) {
+				targetCount = clamp(targetCount, 0, N);
+				if (targetCount === shownCount) return;
+
+				const wrap = document.querySelector(".puzzle-wrap");
+				const grid = document.getElementById("puzzle");
+
+				// Reveal new pieces with animation in predefined order (1-25 left-to-right, top-to-bottom)
+				for (let k = shownCount; k < targetCount; k++) {
+					const idx = REVEAL_ORDER[k];
+					const el = grid.querySelector(`.piece-svg[data-index="${idx}"]`);
+					if (!el) continue;
+					el.style.zIndex = String(100 + k); // ensure newest piece sits on top during reveal
+					el.style.setProperty("--fx", (Math.random() * 2 - 1) * 20 + "vw");
+					el.style.setProperty("--fy", 20 + Math.random() * 30 + "vh");
+					el.style.setProperty("--fr", (Math.random() * 2 - 1) * 18 + "deg");
+					el.style.setProperty("--delay", Math.random() * 220 + "ms");
+					el.classList.add("piece--reveal", "piece--shown");
+				}
+				shownCount = targetCount;
+
+				// Placeholder only when 0 pieces shown
+				document.querySelector(".puzzle-placeholder")?.classList.toggle("is-off", shownCount > 0);
+
+				// Remove gaps at 100%
+				wrap.classList.toggle("complete", shownCount >= N);
+
+				// Faint grid visibility while incomplete
+				document.querySelector(".puzzle-back").style.opacity = shownCount < N ? 0.4 : 0;
+			}
+
+			/* ===== Layout Mode: drag to move, wheel to resize, press S to export map ===== */
+			function enableLayoutMode() {
+				let selected = null;
+				const board = document.getElementById("puzzle");
+				const rect = () => board.getBoundingClientRect();
+				const imgs = Array.from(board.querySelectorAll(".piece-img"));
+				if (!PIECE_MAP) PIECE_MAP = defaultPieceMap();
+
+				// Make all pieces visible and interactive for editing
+				imgs.forEach((img, i) => {
+					img.classList.add("piece--shown");
+					img.classList.remove("piece--reveal");
+					img.style.pointerEvents = "auto";
+					img.style.zIndex = String(100 + i);
+				});
+
+				// Normalize PIECE_MAP widths/heights to PX so keyboard ops don't shrink pieces
+				// (When we came from placeholder grid, PIECE_MAP had percent tile sizes.)
+				const boardRectNow = board.getBoundingClientRect();
+				imgs.forEach((img, i) => {
+					const idx = Number(img.dataset.index) + 1;
+					const m = PIECE_MAP[idx] || (PIECE_MAP[idx] = {});
+
+					// Read current rendered size from DOM in px
+					const r = img.getBoundingClientRect();
+					const renderedW = Math.max(1, Math.round(r.width));
+					const renderedH = Math.max(1, Math.round(r.height));
+
+					// If map has suspiciously small w/h (likely % like ~20), replace with px
+					if (!m.w || m.w < 50) m.w = renderedW; // threshold avoids 1–30 px percent carryover
+					if (!m.h || m.h < 50) m.h = renderedH;
+
+					// Ensure DOM reflects px values going forward
+					img.style.width = m.w + "px";
+					img.style.height = m.h + "px";
+				});
+
+				let current = null,
+					start = { x: 0, y: 0 },
+					origin = { x: 0, y: 0 },
+					dragging = false;
+
+				board.addEventListener("mousedown", (e) => {
+					const t = e.target.closest(".piece-img");
+					if (!t) return;
+					e.preventDefault();
+					current = t;
+					const idx = Number(t.dataset.index) + 1;
+					const m = PIECE_MAP[idx];
+					origin = { x: m.x, y: m.y };
+					start = { x: e.clientX, y: e.clientY };
+					dragging = true;
+					// Set selected piece and outline
+					selected = t;
+					imgs.forEach((el) => (el.style.outline = "none"));
+					selected.style.outline = "2px dashed rgba(255,255,255,.35)";
+				});
+
+				window.addEventListener("mousemove", (e) => {
+					if (!dragging || !current) return;
+					const r = rect();
+					const dx = ((e.clientX - start.x) / r.width) * 100;
+					const dy = ((e.clientY - start.y) / r.height) * 100;
+					const idx = Number(current.dataset.index) + 1;
+					PIECE_MAP[idx].x = Math.max(0, Math.min(100, origin.x + dx));
+					PIECE_MAP[idx].y = Math.max(0, Math.min(100, origin.y + dy));
+					current.style.left = PIECE_MAP[idx].x + "%";
+					current.style.top = PIECE_MAP[idx].y + "%";
+				});
+
+				window.addEventListener("mouseup", () => {
+					dragging = false;
+					current = null;
+				});
+
+				/*
+				// Resize with mouse wheel (Shift for fine control)
+				board.addEventListener(
+					"wheel",
+					(e) => {
+						const t = e.target.closest(".piece-img");
+						if (!t) return;
+						e.preventDefault();
+						const idx = Number(t.dataset.index) + 1;
+						const step = e.shiftKey ? 0.1 : 0.5; // % of board width
+						if (e.altKey) {
+							PIECE_MAP[idx].h = Math.max(1, (PIECE_MAP[idx].h ?? PIECE_MAP[idx].w ?? 100 / COLS) + (e.deltaY < 0 ? step : -step));
+							t.style.height = PIECE_MAP[idx].h + "%";
+						} else {
+							PIECE_MAP[idx].w = Math.max(1, (PIECE_MAP[idx].w || 100 / COLS) + (e.deltaY < 0 ? step : -step));
+							t.style.width = PIECE_MAP[idx].w + "%";
+						}
+					},
+					{ passive: false }
+				);
+				*/
+
+				// --- Keyboard/movement/JSON export logic for layout mode ---
+				window.addEventListener("keydown", (e) => {
+					// --- Export PIECE_MAP with Ctrl+S / Cmd+S ---
+					const isMac = navigator.platform.toUpperCase().includes("MAC");
+					if ((isMac && e.metaKey && e.key.toLowerCase() === "s") || (!isMac && e.ctrlKey && e.key.toLowerCase() === "s")) {
+						e.preventDefault();
+						const normalized = {};
+						Object.keys(PIECE_MAP).forEach((k) => {
+							const m = PIECE_MAP[k];
+							normalized[k] = { x: +m.x.toFixed(3), y: +m.y.toFixed(3), w: +m.w.toFixed(3), h: +(m.h ?? m.w).toFixed(3) };
+						});
+						const json = JSON.stringify(normalized, null, 2);
+						console.log("PIECE_MAP =", json);
+						navigator.clipboard?.writeText(json).then(() => {
+							const toast = document.createElement("div");
+							toast.textContent = "✅ Layout JSON copied to clipboard";
+							Object.assign(toast.style, {
+								position: "fixed",
+								bottom: "20px",
+								right: "20px",
+								background: "rgba(0,0,0,.7)",
+								color: "white",
+								padding: "8px 12px",
+								borderRadius: "8px",
+								zIndex: 99999,
+								fontSize: "14px",
+								transition: "opacity 0.5s ease",
+								opacity: 1,
+							});
+							document.body.appendChild(toast);
+							setTimeout(() => (toast.style.opacity = 0), 1500);
+							setTimeout(() => toast.remove(), 2000);
+						});
+						return;
+					}
+
+					if (!selected) return;
+					const idx = Number(selected.dataset.index) + 1;
+					const m = PIECE_MAP[idx];
+					const boardRect = board.getBoundingClientRect();
+
+					// movement step in px (convert to percent after)
+					const stepPx = e.shiftKey ? 1 : 5; // fine or coarse
+					const stepX = (stepPx / boardRect.width) * 100;
+					const stepY = (stepPx / boardRect.height) * 100;
+
+					let handled = false;
+
+					switch (e.key) {
+						case "ArrowLeft":
+							m.x = Math.max(0, m.x - stepX);
+							handled = true;
+							break;
+						case "ArrowRight":
+							m.x = Math.min(100, m.x + stepX);
+							handled = true;
+							break;
+						case "ArrowUp":
+							m.y = Math.max(0, m.y - stepY);
+							handled = true;
+							break;
+						case "ArrowDown":
+							m.y = Math.min(100, m.y + stepY);
+							handled = true;
+							break;
+						case "a":
+						case "A": // width - (5%)
+							m.w = Math.max(1, m.w * 0.95);
+							handled = true;
+							break;
+						case "d":
+						case "D": // width + (5%)
+							m.w = Math.max(1, m.w * 1.05);
+							handled = true;
+							break;
+						case "w":
+						case "W": // height + (5%)
+							m.h = Math.max(1, m.h * 1.05);
+							handled = true;
+							break;
+						case "s":
+						case "S": // height - (5%)
+							m.h = Math.max(1, m.h * 0.95);
+							handled = true;
+							break;
+					}
+
+					if (handled) {
+						selected.style.left = m.x + "%";
+						selected.style.top = m.y + "%";
+						selected.style.width = m.w + "px";
+						selected.style.height = m.h + "px";
+						e.preventDefault();
+					}
+
+					// Extra tools: 'E' equalize, 'R' reapply
+					if (e.key.toLowerCase() === "e") {
+						autoAdjustRowColSizes({ tight: false });
+						applyMapToDOM();
+					}
+					if (e.key.toLowerCase() === "r") {
+						applyMapToDOM();
+					}
+				});
+
+				// Add quick-help overlay
+				const help = document.createElement("div");
+				help.innerHTML = `🧩 <b>Layout Mode:</b> Click a piece to select<br>←↑↓→ move (Shift = fine)<br>W/S = taller/shorter<br>A/D = thinner/wider<br>Ctrl+S = save JSON`;
+				Object.assign(help.style, {
+					position: "fixed",
+					bottom: "20px",
+					left: "20px",
+					color: "white",
+					background: "rgba(0,0,0,.5)",
+					padding: "10px 14px",
+					borderRadius: "8px",
+					fontSize: "13px",
+					zIndex: 9999,
+					lineHeight: "1.4",
+				});
+				document.body.appendChild(help);
+			}
+
+			function setNumbers(total) {
+				const pct = clamp(total / GOAL, 0, 1);
+				$("#raised").textContent = fmtUSD(total);
+				$("#goal").textContent = fmtUSD(GOAL);
+				$("#remaining").textContent = fmtUSD(Math.max(0, GOAL - total));
+				$("#pct").textContent = Math.round(pct * 100) + "%";
+				// Update piece visibility
+				const targetPieces = Math.floor(pct / PIECE_STEP + 1e-9); // avoid FP wobble
+				revealPieces(targetPieces);
+				// Accent color shifts red->green (optional: tie to %)
+				const hue = 0 + 120 * pct;
+				const color = `hsl(${hue}, 90%, ${38 + 8 * pct}%)`;
+				document.body.style.setProperty("--accent", color);
+				$("#raised").style.color = color;
+				$("#remaining").style.color = color;
+			}
+
+			/**********************
+			 * CONFETTI + VICTORY WASH
+			 **********************/
+			const confettiCanvas = $("#confetti");
+			const ctx = confettiCanvas.getContext("2d");
+			let confettiPieces = [];
+			function resizeCanvas() {
+				confettiCanvas.width = innerWidth;
+				confettiCanvas.height = innerHeight;
+			}
+			addEventListener("resize", resizeCanvas);
+			resizeCanvas();
+
+			function launchConfetti(durationMs = 5000) {
+				if (confettiFired) return;
+				confettiFired = true;
+				const colors = ["#ffffff", "#ffd166", "#ef476f", "#06d6a0", "#7aa2ff"];
+				const count = Math.min(240, Math.floor(innerWidth / 7));
+				confettiPieces = Array.from({ length: count }, () => ({
+					x: Math.random() * confettiCanvas.width,
+					y: -20,
+					w: 6 + Math.random() * 6,
+					h: 10 + Math.random() * 10,
+					speed: 2 + Math.random() * 3,
+					tilt: Math.random() * 10,
+					tiltSpeed: Math.random() * 0.06 + 0.03,
+					color: colors[(Math.random() * colors.length) | 0],
+					rotation: Math.random() * Math.PI,
+				}));
+				const start = performance.now();
+				(function frame(now) {
+					const t = now - start;
+					ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+					confettiPieces.forEach((p) => {
+						p.y += p.speed;
+						p.tilt += p.tiltSpeed;
+						p.x += Math.sin(p.tilt) * 1.5;
+						p.rotation += 0.03;
+						ctx.save();
+						ctx.translate(p.x, p.y);
+						ctx.rotate(p.rotation);
+						ctx.fillStyle = p.color;
+						ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+						ctx.restore();
+					});
+					confettiPieces = confettiPieces.filter((p) => p.y < confettiCanvas.height + 40);
+					if (t < durationMs || confettiPieces.length) requestAnimationFrame(frame);
+					else
+						setTimeout(() => {
+							confettiFired = false;
+						}, 1500);
+				})(start);
+			}
+
+			/**********************
+			 * DATA LOAD
+			 **********************/
+			async function fetchCSVNumber(url) {
+				const res = await fetch(url + (url.includes("?") ? "&" : "?") + "cacheBust=" + Date.now(), { cache: "no-store" });
+				const txt = await res.text();
+				const cleaned = txt.replace(/[\r\n,]/g, "").trim();
+				const num = parseFloat(cleaned);
+				if (Number.isNaN(num)) throw new Error('CSV did not contain a valid number: "' + txt.slice(0, 120) + '..."');
+				return Math.max(0, Math.floor(num));
+			}
+
+			let countdownTimer = null;
+			function startCountdown() {
+				clearInterval(countdownTimer);
+				let left = REFRESH_MS / 1000;
+				$("#next").textContent = left + "s";
+				countdownTimer = setInterval(() => {
+					left -= 1;
+					if (left < 0) left = 0;
+					$("#next").textContent = left + "s";
+				}, 1000);
+			}
+
+			async function loadTotal(instant = false) {
+				try {
+					const total = await fetchCSVNumber(SHEET_URL);
+					setNumbers(total);
+					$("#last").textContent = ts();
+
+					if (total >= GOAL && lastTotal < GOAL) {
+						$("#victory").classList.add("victory--on");
+						launchConfetti();
+					}
+					if (total < GOAL) {
+						$("#victory").classList.remove("victory--on");
+					}
+
+					lastTotal = total;
+				} catch (err) {
+					console.error(err);
+				} finally {
+					if (!instant) startCountdown();
+				}
+			}
+
+			/**********************
+			 * INIT
+			 **********************/
+			(function init() {
+				buildPuzzle();
+				// Layout mode disabled for SVG stack version (no manual positioning required)
+				shownCount = 0;
+				setNumbers(0);
+				document.getElementById("goal").textContent = fmtUSD(GOAL);
+				document.getElementById("last").textContent = "—";
+				loadTotal(true);
+				setInterval(loadTotal, REFRESH_MS);
+				window.toggleFullscreen = toggleFullscreen;
+				window.forceRefresh = forceRefresh;
+			})();
+		</script>
+	</body>
+</html>

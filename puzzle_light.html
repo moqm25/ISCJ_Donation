@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>ISCJ Fundraiser Puzzle (Light)</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="light" />
+		<style>
+			:root {
+				--bg: #f8fbff;
+				--panel: #ffffff;
+				--glass: rgba(0, 0, 0, 0.04);
+				--text: #1a2230;
+				--muted: #5b6b82;
+				--accent: #2a80c5;
+				--ring: rgba(42, 128, 197, 0.25);
+				--shadow: 0 10px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+				--radius: 20px;
+				--puzzle-w: min(92vw, 980px);
+				--puzzle-aspect: 1/1;
+				--piece-gap: 6px;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				color: var(--text);
+				background: linear-gradient(180deg, #fdfdfd, #edf2f7 80%);
+				font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+			}
+
+			.wrap {
+				min-height: 100%;
+				display: grid;
+				grid-template-columns: 1fr auto 1fr;
+				gap: clamp(24px, 3vw, 48px);
+				align-items: center;
+				padding: clamp(16px, 3vw, 32px);
+			}
+
+			.left {
+				display: grid;
+				gap: 16px;
+				align-content: center;
+			}
+
+			.panel {
+				background: var(--panel);
+				border: 1px solid rgba(0, 0, 0, 0.05);
+				box-shadow: var(--shadow);
+				border-radius: var(--radius);
+				padding: clamp(18px, 2vw, 28px);
+			}
+
+			.kpis {
+				display: grid;
+				gap: 16px;
+			}
+			.kpi {
+				display: grid;
+				gap: 8px;
+				padding: 14px 16px;
+				border-radius: 16px;
+				background: var(--glass);
+				border: 1px solid rgba(0, 0, 0, 0.05);
+			}
+			.kpi .label {
+				color: var(--muted);
+				font-weight: 600;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
+				font-size: 12px;
+			}
+			.kpi .value {
+				font-weight: 800;
+				font-size: clamp(28px, 4vw, 44px);
+				line-height: 1.1;
+			}
+			.kpi .note {
+				color: var(--muted);
+				font-size: 13px;
+			}
+
+			.heading {
+				font-size: clamp(28px, 4vw, 52px);
+				font-weight: 900;
+				line-height: 1.05;
+				letter-spacing: 0.2px;
+				margin: 0 0 10px 0;
+				text-wrap: balance;
+			}
+			.sub {
+				color: var(--muted);
+				font-size: clamp(14px, 1.8vw, 18px);
+				margin-bottom: 8px;
+			}
+
+			.statbar {
+				display: grid;
+				grid-template-columns: 1fr 1fr 1fr;
+				gap: 10px;
+				margin-top: 12px;
+			}
+			.pill {
+				background: var(--glass);
+				border: 1px solid rgba(0, 0, 0, 0.05);
+				border-radius: 999px;
+				padding: 10px 14px;
+				display: grid;
+				gap: 4px;
+				justify-items: center;
+			}
+			.pill b {
+				font-size: clamp(16px, 2.6vw, 22px);
+			}
+			.pill span {
+				color: var(--muted);
+				font-size: 12px;
+			}
+
+			.cta {
+				margin-top: 8px;
+				display: flex;
+				gap: 8px;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+			.btn {
+				background: linear-gradient(180deg, #2a80c5, #1e68aa);
+				border: none;
+				color: #fff;
+				padding: 10px 16px;
+				border-radius: 12px;
+				font-weight: 700;
+				letter-spacing: 0.2px;
+				text-decoration: none;
+				box-shadow: 0 10px 25px rgba(42, 128, 197, 0.35);
+			}
+			.btn:active {
+				transform: translateY(1px);
+			}
+
+			/* PUZZLE AREA (same layout as dark, light styling) */
+			.puzzle-wrap {
+				position: relative;
+				width: var(--puzzle-w);
+				aspect-ratio: var(--puzzle-aspect);
+				height: auto;
+				margin: 0 auto;
+				display: grid;
+				place-items: center;
+				isolation: isolate;
+				overflow: hidden;
+			}
+
+			.victory {
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				opacity: 0;
+				background: radial-gradient(120% 120% at 50% 50%, rgba(76, 175, 80, 0.16), transparent 60%);
+				transition: opacity 600ms ease;
+				z-index: 1;
+			}
+			.victory--on {
+				opacity: 1;
+			}
+
+			.puzzle-frame {
+				position: absolute;
+				inset: 0;
+				border-radius: 16px;
+				box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1), 0 35px 90px rgba(0, 0, 0, 0.15);
+				z-index: 2;
+				pointer-events: none;
+			}
+
+			.puzzle {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 3;
+			}
+
+			/* Stacked SVG pieces */
+			.piece-svg {
+				position: absolute;
+				/* left: 50%;
+				top: 50%; */
+				transform: translate(-50%, -50%);
+				width: 100%;
+				height: 100%;
+				opacity: 0; /* hidden until revealed */
+				pointer-events: none; /* display-only */
+			}
+			.piece-svg.piece--shown {
+				opacity: 1;
+				transition: opacity 180ms ease;
+			}
+			@keyframes fly-in {
+				0% {
+					transform: translate(var(--fx, 0), var(--fy, 40vh)) rotate(var(--fr, 0deg)) scale(0.88);
+					opacity: 0;
+				}
+				60% {
+					opacity: 1;
+				}
+				100% {
+					transform: translate(0, 0) rotate(0) scale(1);
+					opacity: 1;
+				}
+			}
+			.piece-svg.piece--reveal {
+				animation: fly-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+				animation-delay: var(--delay, 0ms);
+				box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+			}
+
+			.puzzle-back {
+				position: absolute;
+				inset: 0;
+				border-radius: 16px;
+				z-index: 0;
+				background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px) 0 0 /
+						calc((100% - (var(--cols)-1) * var(--piece-gap)) / var(--cols) + var(--piece-gap)) 100%,
+					linear-gradient(0deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px) 0 0/ 100% calc((100% - (var(--rows)-1) * var(--piece-gap)) /
+								var(--rows) + var(--piece-gap));
+			}
+
+			.puzzle-placeholder {
+				position: absolute;
+				inset: 0;
+				border-radius: 16px;
+				z-index: 1;
+				background-image: url("./pic.jpg");
+				background-size: cover;
+				background-position: center;
+				filter: saturate(0.9) brightness(1);
+				opacity: 0.12;
+				transition: opacity 300ms ease;
+				pointer-events: none;
+			}
+			.puzzle-placeholder.is-off {
+				opacity: 0;
+			}
+
+			@media (max-width: 1100px) {
+				.wrap {
+					grid-template-columns: 1fr;
+				}
+				.left {
+					order: 2;
+				}
+				.puzzle-wrap {
+					order: 1;
+					width: min(96vw, 980px);
+					aspect-ratio: var(--puzzle-aspect);
+					height: auto;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<!-- LEFT KPIs -->
+			<div class="left">
+				<div class="panel">
+					<h1 class="heading">ISCJ Fundraiser Progress</h1>
+					<div class="sub">Every gift moves the needle — thank you for your generosity!</div>
+
+					<div class="kpis">
+						<div class="kpi">
+							<div class="label">Raised</div>
+							<div class="value" id="raised">$0</div>
+							<div class="note">Auto-updates from submissions</div>
+						</div>
+						<div class="kpi">
+							<div class="label">Goal</div>
+							<div class="value" id="goal">$200,000</div>
+							<div class="note">We’ve got this 💪</div>
+						</div>
+						<div class="kpi">
+							<div class="label">Remaining</div>
+							<div class="value" id="remaining">$200,000</div>
+							<div class="note">Until we hit the goal</div>
+						</div>
+					</div>
+
+					<div class="statbar">
+						<div class="pill"><b id="pct">0%</b><span>to goal</span></div>
+						<div class="pill"><b id="last">—</b><span>last updated</span></div>
+						<div class="pill"><b id="next">10s</b><span>auto-refresh</span></div>
+					</div>
+
+					<div class="cta">
+						<a class="btn" href="#" onclick="toggleFullscreen();return false;">Fullscreen</a>
+						<a class="btn" href="#" onclick="forceRefresh();return false;">Refresh now</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- CENTER: PUZZLE -->
+			<div class="puzzle-wrap">
+				<div class="victory" id="victory"></div>
+				<div class="puzzle-back"></div>
+				<div class="puzzle-placeholder"></div>
+
+				<div class="puzzle" id="puzzle" style="--rows: 5; --cols: 5"></div>
+				<div class="puzzle-frame"></div>
+				<canvas id="confetti" style="position: fixed; inset: 0; pointer-events: none; z-index: 9999"></canvas>
+			</div>
+
+			<div></div>
+		</div>
+
+		<script>
+			/********* CONFIG *********/
+			const GOAL = 200000;
+			const REFRESH_MS = 10_000;
+			const ROWS = 5,
+				COLS = 5,
+				N = ROWS * COLS;
+			// Create randomized reveal order (Fisher–Yates shuffle)
+			const REVEAL_ORDER = Array.from({ length: N }, (_, i) => i).sort(() => Math.random() - 0.5);
+			const PIECE_STEP = 1 / N;
+			const SHEET_URL =
+				"https://docs.google.com/spreadsheets/d/1nBz3ZcfR9EeA2oRAd-hz7wFHPumSGXY4FvcXHXB0Upo/export?format=csv&gid=535518416&range=A1";
+
+			/********* STATE *********/
+			let lastTotal = 0,
+				confettiFired = false,
+				shownCount = 0;
+			const $ = (s) => document.querySelector(s);
+
+			/********* HELPERS *********/
+			const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+			const fmtUSD = (n) => n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+			const ts = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+			function toggleFullscreen() {
+				const el = document.documentElement;
+				if (!document.fullscreenElement) el.requestFullscreen?.();
+				else document.exitFullscreen?.();
+			}
+			function forceRefresh() {
+				loadTotal(true);
+			}
+
+			/********* BUILD *********/
+			function buildPuzzle() {
+				const wrap = document.querySelector(".puzzle-wrap");
+				const board = document.getElementById("puzzle");
+				wrap.style.setProperty("--rows", ROWS);
+				wrap.style.setProperty("--cols", COLS);
+				board.innerHTML = "";
+				for (let i = 1; i <= N; i++) {
+					const img = document.createElement("img");
+					img.className = "piece-svg";
+					img.src = `./puzzle_pieces/${i}.svg`;
+					img.alt = `Puzzle piece ${i}`;
+					img.dataset.index = i - 1;
+					board.appendChild(img);
+				}
+			}
+
+			/********* REVEAL *********/
+			function revealPieces(targetCount) {
+				targetCount = clamp(targetCount, 0, N);
+				if (targetCount === shownCount) return;
+				const grid = document.getElementById("puzzle");
+
+				for (let k = shownCount; k < targetCount; k++) {
+					const idx = REVEAL_ORDER[k];
+					const el = grid.querySelector(`.piece-svg[data-index="${idx}"]`);
+					if (!el) continue;
+					el.style.zIndex = String(100 + k);
+					el.style.setProperty("--fx", (Math.random() * 2 - 1) * 20 + "vw");
+					el.style.setProperty("--fy", 20 + Math.random() * 30 + "vh");
+					el.style.setProperty("--fr", (Math.random() * 2 - 1) * 18 + "deg");
+					el.style.setProperty("--delay", Math.random() * 220 + "ms");
+					el.classList.add("piece--reveal", "piece--shown");
+				}
+				shownCount = targetCount;
+
+				document.querySelector(".puzzle-placeholder")?.classList.toggle("is-off", shownCount > 0);
+				document.querySelector(".puzzle-back").style.opacity = shownCount < N ? 0.4 : 0;
+			}
+
+			/********* NUMBERS & COLOR ACCENT *********/
+			function setNumbers(total) {
+				const pct = clamp(total / GOAL, 0, 1);
+				$("#raised").textContent = fmtUSD(total);
+				$("#goal").textContent = fmtUSD(GOAL);
+				$("#remaining").textContent = fmtUSD(Math.max(0, GOAL - total));
+				$("#pct").textContent = Math.round(pct * 100) + "%";
+
+				const targetPieces = Math.floor(pct / PIECE_STEP + 1e-9);
+				revealPieces(targetPieces);
+
+				// accent color
+				const hue = 0 + 120 * pct;
+				const color = `hsl(${hue}, 90%, ${45 + 5 * pct}%)`;
+				document.body.style.setProperty("--accent", color);
+				$("#raised").style.color = color;
+				$("#remaining").style.color = color;
+			}
+
+			/********* CONFETTI *********/
+			const confettiCanvas = $("#confetti");
+			const ctx = confettiCanvas.getContext("2d");
+			let confettiPieces = [];
+			function resizeCanvas() {
+				confettiCanvas.width = innerWidth;
+				confettiCanvas.height = innerHeight;
+			}
+			addEventListener("resize", resizeCanvas);
+			resizeCanvas();
+
+			function launchConfetti(durationMs = 5000) {
+				if (confettiFired) return;
+				confettiFired = true;
+				const colors = ["#ffd166", "#ef476f", "#06d6a0", "#2a80c5", "#118ab2"];
+				const count = Math.min(240, Math.floor(innerWidth / 7));
+				confettiPieces = Array.from({ length: count }, () => ({
+					x: Math.random() * confettiCanvas.width,
+					y: -20,
+					w: 6 + Math.random() * 6,
+					h: 10 + Math.random() * 10,
+					speed: 2 + Math.random() * 3,
+					tilt: Math.random() * 10,
+					tiltSpeed: Math.random() * 0.06 + 0.03,
+					color: colors[(Math.random() * colors.length) | 0],
+					rotation: Math.random() * Math.PI,
+				}));
+				const start = performance.now();
+				(function frame(now) {
+					const t = now - start;
+					ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+					confettiPieces.forEach((p) => {
+						p.y += p.speed;
+						p.tilt += p.tiltSpeed;
+						p.x += Math.sin(p.tilt) * 1.5;
+						p.rotation += 0.03;
+						ctx.save();
+						ctx.translate(p.x, p.y);
+						ctx.rotate(p.rotation);
+						ctx.fillStyle = p.color;
+						ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+						ctx.restore();
+					});
+					confettiPieces = confettiPieces.filter((p) => p.y < confettiCanvas.height + 40);
+					if (t < durationMs || confettiPieces.length) requestAnimationFrame(frame);
+					else
+						setTimeout(() => {
+							confettiFired = false;
+						}, 1500);
+				})(start);
+			}
+
+			/********* DATA *********/
+			async function fetchCSVNumber(url) {
+				const res = await fetch(url + (url.includes("?") ? "&" : "?") + "cacheBust=" + Date.now(), { cache: "no-store" });
+				const txt = await res.text();
+				const cleaned = txt.replace(/[^\d.]/g, "").trim(); // only one backslash before d
+				const num = parseFloat(cleaned);
+				if (Number.isNaN(num)) throw new Error(`Invalid number: "${txt}"`);
+				return Math.floor(num);
+			}
+
+			let countdownTimer = null;
+			function startCountdown() {
+				clearInterval(countdownTimer);
+				let left = REFRESH_MS / 1000;
+				$("#next").textContent = left + "s";
+				countdownTimer = setInterval(() => {
+					left = Math.max(0, left - 1);
+					$("#next").textContent = left + "s";
+				}, 1000);
+			}
+
+			async function loadTotal(instant = false) {
+				try {
+					const total = await fetchCSVNumber(SHEET_URL);
+					setNumbers(total);
+					$("#last").textContent = ts();
+
+					if (total >= GOAL && lastTotal < GOAL) {
+						$("#victory").classList.add("victory--on");
+						launchConfetti();
+					}
+					if (total < GOAL) {
+						$("#victory").classList.remove("victory--on");
+					}
+					lastTotal = total;
+				} catch (err) {
+					console.error(err);
+				} finally {
+					if (!instant) startCountdown();
+				}
+			}
+
+			/********* INIT *********/
+			(function init() {
+				buildPuzzle();
+				shownCount = 0;
+				setNumbers(0);
+				$("#goal").textContent = fmtUSD(GOAL);
+				$("#last").textContent = "—";
+				loadTotal(true);
+				setInterval(loadTotal, REFRESH_MS);
+				window.toggleFullscreen = toggleFullscreen;
+				window.forceRefresh = forceRefresh;
+			})();
+		</script>
+	</body>
+</html>
