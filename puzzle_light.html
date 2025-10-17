@@ -334,8 +334,8 @@
 			/********* CONFIG *********/
 			const GOAL = 750000;
 			const REFRESH_MS = 10_000;
-			const ROWS = 5,
-				COLS = 5,
+			const ROWS = 9,
+				COLS = 9,
 				N = ROWS * COLS;
 			// Create randomized reveal order (Fisher–Yates shuffle)
 			const REVEAL_ORDER = Array.from({ length: N }, (_, i) => i).sort(() => Math.random() - 0.5);
@@ -360,6 +360,7 @@
 			}
 			function forceRefresh() {
 				loadTotal(true);
+				startCountdown();
 			}
 
 			/********* BUILD *********/
@@ -380,24 +381,62 @@
 			}
 
 			/********* REVEAL *********/
+			// function revealPieces(targetCount) {
+			// 	targetCount = clamp(targetCount, 0, N);
+			// 	if (targetCount === shownCount) return;
+			// 	const grid = document.getElementById("puzzle");
+
+			// 	for (let k = shownCount; k < targetCount; k++) {
+			// 		const idx = REVEAL_ORDER[k];
+			// 		const el = grid.querySelector(`.piece-svg[data-index="${idx}"]`);
+			// 		if (!el) continue;
+			// 		el.style.zIndex = String(100 + k);
+			// 		el.style.setProperty("--fx", (Math.random() * 2 - 1) * 20 + "vw");
+			// 		el.style.setProperty("--fy", 20 + Math.random() * 30 + "vh");
+			// 		el.style.setProperty("--fr", (Math.random() * 2 - 1) * 18 + "deg");
+			// 		el.style.setProperty("--delay", Math.random() * 220 + "ms");
+			// 		el.classList.add("piece--reveal", "piece--shown");
+			// 	}
+			// 	shownCount = targetCount;
+
+			// 	document.querySelector(".puzzle-placeholder")?.classList.toggle("is-off", shownCount > 0);
+			// 	document.querySelector(".puzzle-back").style.opacity = shownCount < N ? 0.4 : 0;
+			// }
 			function revealPieces(targetCount) {
 				targetCount = clamp(targetCount, 0, N);
 				if (targetCount === shownCount) return;
+
 				const grid = document.getElementById("puzzle");
 
-				for (let k = shownCount; k < targetCount; k++) {
-					const idx = REVEAL_ORDER[k];
-					const el = grid.querySelector(`.piece-svg[data-index="${idx}"]`);
-					if (!el) continue;
-					el.style.zIndex = String(100 + k);
-					el.style.setProperty("--fx", (Math.random() * 2 - 1) * 20 + "vw");
-					el.style.setProperty("--fy", 20 + Math.random() * 30 + "vh");
-					el.style.setProperty("--fr", (Math.random() * 2 - 1) * 18 + "deg");
-					el.style.setProperty("--delay", Math.random() * 220 + "ms");
-					el.classList.add("piece--reveal", "piece--shown");
+				if (targetCount > shownCount) {
+					// REVEAL forward
+					for (let k = shownCount; k < targetCount; k++) {
+						const idx = REVEAL_ORDER[k];
+						const el = grid.querySelector(`.piece-svg[data-index="${idx}"]`);
+						if (!el) continue;
+						el.style.zIndex = String(100 + k);
+						el.style.setProperty("--fx", (Math.random() * 2 - 1) * 20 + "vw");
+						el.style.setProperty("--fy", 20 + Math.random() * 30 + "vh");
+						el.style.setProperty("--fr", (Math.random() * 2 - 1) * 18 + "deg");
+						el.style.setProperty("--delay", Math.random() * 220 + "ms");
+						el.classList.add("piece--reveal", "piece--shown");
+					}
+				} else {
+					// HIDE backward
+					for (let k = shownCount - 1; k >= targetCount; k--) {
+						const idx = REVEAL_ORDER[k];
+						const el = grid.querySelector(`.piece-svg[data-index="${idx}"]`);
+						if (!el) continue;
+						el.classList.remove("piece--reveal", "piece--shown");
+						el.style.removeProperty("z-index");
+						el.style.removeProperty("--fx");
+						el.style.removeProperty("--fy");
+						el.style.removeProperty("--fr");
+						el.style.removeProperty("--delay");
+					}
 				}
-				shownCount = targetCount;
 
+				shownCount = targetCount;
 				document.querySelector(".puzzle-placeholder")?.classList.toggle("is-off", shownCount > 0);
 				document.querySelector(".puzzle-back").style.opacity = shownCount < N ? 0.4 : 0;
 			}
@@ -498,6 +537,7 @@
 				try {
 					const total = await fetchCSVNumber(SHEET_URL);
 					setNumbers(total);
+
 					$("#last").textContent = ts();
 
 					if (total >= GOAL) {
