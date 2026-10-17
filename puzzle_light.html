@@ -36,8 +36,10 @@
 			.wrap {
 				min-height: 100%;
 				display: grid;
-				grid-template-columns: minmax(320px, 520px) 1fr; /* sidebar | puzzle */
-				gap: clamp(24px, 3vw, 48px);
+				grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
+				grid-template-rows: 1fr auto;
+				column-gap: clamp(24px, 3vw, 48px);
+				row-gap: 20px;
 				align-items: center;
 				padding: clamp(16px, 3vw, 32px);
 			}
@@ -46,7 +48,8 @@
 				display: grid;
 				gap: 16px;
 				align-content: center;
-				width: clamp(320px, 36vw, 520px);
+				width: 100%;
+				min-width: 0;
 			}
 
 			.panel {
@@ -59,87 +62,152 @@
 
 			.kpis {
 				display: grid;
-				gap: 16px;
+				gap: 28px;
 			}
 			.kpi {
 				display: grid;
-				gap: 8px;
-				padding: 14px 16px;
-				border-radius: 16px;
-				background: var(--glass);
-				border: 1px solid rgba(0, 0, 0, 0.05);
+				gap: 12px;
+				min-width: 0;
 			}
 			.kpi .label {
 				color: var(--muted);
 				font-weight: 600;
 				letter-spacing: 0.02em;
 				text-transform: uppercase;
-				font-size: 12px;
+				font-size: clamp(18px, 1.3vw, 22px);
+				line-height: 1.3;
 			}
 			.kpi .value {
 				font-weight: 800;
-				font-size: clamp(28px, 4vw, 44px);
+				font-size: clamp(28px, 2.5vw, 40px);
 				line-height: 1.1;
+				font-variant-numeric: tabular-nums;
 			}
-			.kpi .note {
+			.primary-metric .value {
+				font-size: clamp(36px, 5vw, 80px);
+				letter-spacing: -0.025em;
+			}
+			.goal-progress {
+				padding-top: 28px;
+				border-top: 1px solid rgba(0, 0, 0, 0.12);
+			}
+			.goal-row {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				flex-wrap: wrap;
+				gap: 12px 20px;
+			}
+			.goal-context {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 8px;
+				font-size: 20px;
 				color: var(--muted);
-				font-size: 13px;
+			}
+			.goal-context strong {
+				font-size: clamp(20px, 1.7vw, 28px);
+				font-weight: 600;
+				color: var(--text);
+				font-variant-numeric: tabular-nums;
+				white-space: nowrap;
+			}
+			.goal-percentage {
+				font-size: clamp(24px, 2.3vw, 32px);
+				font-weight: 750;
+				letter-spacing: -0.02em;
+				font-variant-numeric: tabular-nums;
+				white-space: nowrap;
+			}
+			.goal-meter {
+				display: block;
+				width: 100%;
+				height: 8px;
+				margin: 16px 0 20px;
+				border: 0;
+				border-radius: 999px;
+				overflow: hidden;
+				appearance: none;
+				background: #e6edf4;
+				color: #2a80c5;
+			}
+			.goal-meter::-webkit-progress-bar {
+				background: #e6edf4;
+				border-radius: 999px;
+			}
+			.goal-meter::-webkit-progress-value {
+				background: #2a80c5;
+				border-radius: 999px;
+			}
+			.goal-meter::-moz-progress-bar {
+				background: #2a80c5;
+				border-radius: 999px;
+			}
+			.goal-distance {
+				display: flex;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 6px 12px;
+				font-size: 22px;
+				color: var(--muted);
+			}
+			.goal-distance strong {
+				font-size: clamp(32px, 3.3vw, 44px);
+				font-weight: 750;
+				letter-spacing: -0.025em;
+				font-variant-numeric: tabular-nums;
+				white-space: nowrap;
+				color: var(--text);
 			}
 
 			.heading {
-				font-size: clamp(28px, 4vw, 52px);
-				font-weight: 900;
-				line-height: 1.05;
+				font-size: clamp(28px, 3vw, 44px);
+				font-weight: 800;
+				line-height: 1.1;
 				letter-spacing: 0.2px;
-				margin: 0 0 10px 0;
+				margin: 0 0 32px 0;
 				text-wrap: balance;
 			}
-			.sub {
+			.operator-footer {
+				grid-column: 1 / -1;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				flex-wrap: wrap;
+				gap: 12px 24px;
+				padding-top: 16px;
+				border-top: 1px solid rgba(0, 0, 0, 0.1);
 				color: var(--muted);
-				font-size: clamp(14px, 1.8vw, 18px);
-				margin-bottom: 8px;
+				font-size: 16px;
 			}
-
-			.statbar {
-				display: grid;
-				grid-template-columns: 1fr 1fr 1fr;
-				gap: 10px;
-				margin-top: 12px;
+			.operator-status {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px 24px;
 			}
-			.pill {
-				background: var(--glass);
-				border: 1px solid rgba(0, 0, 0, 0.05);
-				border-radius: 999px;
-				padding: 10px 14px;
-				display: grid;
-				gap: 4px;
-				justify-items: center;
+			.operator-status strong {
+				font-weight: 600;
+				font-variant-numeric: tabular-nums;
 			}
-			.pill b {
-				font-size: clamp(16px, 2.6vw, 22px);
-			}
-			.pill span {
-				color: var(--muted);
-				font-size: 12px;
-			}
-
-			.cta {
-				margin-top: 8px;
+			.operator-actions {
 				display: flex;
 				gap: 8px;
-				justify-content: center;
-				flex-wrap: wrap;
 			}
 			.btn {
-				background: linear-gradient(180deg, #2a80c5, #1e68aa);
-				border: none;
-				color: #fff;
-				padding: 10px 16px;
-				border-radius: 12px;
-				font-weight: 700;
-				letter-spacing: 0.2px;
-				text-decoration: none;
-				box-shadow: 0 10px 25px rgba(42, 128, 197, 0.35);
+				background: transparent;
+				border: 1px solid rgba(0, 0, 0, 0.15);
+				color: var(--muted);
+				padding: 10px 14px;
+				border-radius: 6px;
+				font: inherit;
+				font-weight: 600;
+				min-height: 44px;
+				cursor: pointer;
+			}
+			.btn:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: 3px;
 			}
 			.btn:active {
 				transform: translateY(1px);
@@ -149,7 +217,7 @@
 			.puzzle-wrap {
 				position: relative;
 				/* size is capped by the column width and by viewport height */
-				--max-side: min(92vw, 90vh, 980px);
+				--max-side: min(92vw, calc(100svh - 160px), 980px);
 				width: min(100%, var(--max-side));
 				aspect-ratio: var(--puzzle-aspect);
 				height: auto;
@@ -256,6 +324,7 @@
 			@media (max-width: 1100px) {
 				.wrap {
 					grid-template-columns: 1fr;
+					grid-template-rows: auto auto auto;
 				}
 				.left {
 					order: 2;
@@ -265,14 +334,19 @@
 					order: 1;
 					width: min(100%, min(96vw, 90vh));
 				}
+				.operator-footer {
+					order: 3;
+				}
 			}
 
 			@media (max-height: 800px) {
-				.pill b {
-					font-size: clamp(14px, 2.2vw, 18px);
-				}
 				.puzzle-placeholder {
 					opacity: 0.1;
+				}
+			}
+			@media (max-width: 600px) {
+				.operator-footer {
+					align-items: flex-start;
 				}
 			}
 		</style>
@@ -283,35 +357,22 @@
 			<div class="left">
 				<div class="panel">
 					<h1 class="heading">ISCJ Fundraiser Progress</h1>
-					<div class="sub">Every gift moves the needle — thank you for your generosity!</div>
 
 					<div class="kpis">
-						<div class="kpi">
+						<div class="kpi primary-metric">
 							<div class="label">Raised</div>
 							<div class="value" id="raised" style="background: #0022ff">$0</div>
-							<div class="note">Auto-updates from submissions</div>
 						</div>
-						<div class="kpi">
-							<div class="label">Goal</div>
-							<div class="value" id="goal">$750,000</div>
-							<div class="note">We've got this 💪</div>
+						<div class="goal-progress">
+							<div class="goal-row">
+								<div class="goal-context"><span>Goal</span><strong id="goal">$750,000</strong></div>
+								<strong class="goal-percentage" id="pct">0%</strong>
+							</div>
+							<progress class="goal-meter" id="goal-progress" max="100" value="0" aria-label="Fundraising goal progress"></progress>
+							<div class="goal-distance">
+								<strong id="remaining">$750,000</strong><span id="remaining-label">to go</span>
+							</div>
 						</div>
-						<div class="kpi">
-							<div class="label">Remaining</div>
-							<div class="value" id="remaining" style="background: #0022ff">$750,000</div>
-							<div class="note">Until we hit the goal</div>
-						</div>
-					</div>
-
-					<div class="statbar">
-						<div class="pill"><b id="pct">0%</b><span>to goal</span></div>
-						<div class="pill"><b id="last">—</b><span>last updated</span></div>
-						<div class="pill"><b id="next">10s</b><span>auto-refresh</span></div>
-					</div>
-
-					<div class="cta">
-						<a class="btn" href="#" onclick="toggleFullscreen();return false;">Fullscreen</a>
-						<a class="btn" href="#" onclick="forceRefresh();return false;">Refresh now</a>
 					</div>
 				</div>
 			</div>
@@ -327,7 +388,16 @@
 				<canvas id="confetti" style="position: fixed; inset: 0; pointer-events: none; z-index: 9999"></canvas>
 			</div>
 
-			<div></div>
+			<footer class="operator-footer" aria-label="Display controls">
+				<div class="operator-status">
+					<span>Last updated <strong id="last">—</strong></span>
+					<span>Next refresh <strong id="next">10s</strong></span>
+				</div>
+				<div class="operator-actions">
+					<button class="btn" type="button" onclick="toggleFullscreen()">Fullscreen</button>
+					<button class="btn" type="button" onclick="forceRefresh()">Refresh now</button>
+				</div>
+			</footer>
 		</div>
 
 		<script>
@@ -443,11 +513,15 @@
 
 			/********* NUMBERS & COLOR ACCENT *********/
 			function setNumbers(total) {
-				const pct = clamp(total / GOAL, 0, 1);
+				const actualPct = total / GOAL;
+				const pct = clamp(actualPct, 0, 1);
 				$("#raised").textContent = fmtUSD(total);
 				$("#goal").textContent = fmtUSD(GOAL);
-				$("#remaining").textContent = fmtUSD(Math.max(0, GOAL - total));
-				$("#pct").textContent = Math.round(pct * 100) + "%";
+				$("#remaining").textContent = fmtUSD(Math.abs(GOAL - total));
+				$("#remaining-label").textContent = total > GOAL ? "beyond goal" : "to go";
+				$("#pct").textContent = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(actualPct * 100) + "%";
+				$("#goal-progress").value = pct * 100;
+				$("#goal-progress").setAttribute("aria-valuetext", $("#pct").textContent + " of goal raised");
 
 				const targetPieces = Math.floor(pct / PIECE_STEP + 1e-9);
 				revealPieces(targetPieces);
@@ -457,7 +531,6 @@
 				const color = `hsl(${hue}, 90%, ${45 + 5 * pct}%)`;
 				document.body.style.setProperty("--accent", color);
 				$("#raised").style.color = color;
-				$("#remaining").style.color = color;
 			}
 
 			/********* CONFETTI *********/
